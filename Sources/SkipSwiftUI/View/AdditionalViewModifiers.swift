@@ -460,3 +460,19 @@ extension View {
         }
     }
 }
+
+// MARK: - Mask (stub implementation - returns self unchanged)
+extension View {
+    /// Stub implementation for mask - currently returns the view unchanged on Android.
+    /// TODO: Implement proper masking using Compose's graphicsLayer with BlendMode
+    @inlinable nonisolated public func mask<Mask>(alignment: Alignment = .center, @ViewBuilder _ mask: () -> Mask) -> some View where Mask : View {
+        // For now, just return self - the mask effect is not applied on Android
+        return self
+    }
+
+    /// Stub implementation for mask - currently returns the view unchanged on Android.
+    @inlinable nonisolated public func mask<Mask>(_ mask: Mask) -> some View where Mask : View {
+        // For now, just return self - the mask effect is not applied on Android
+        return self
+    }
+}
