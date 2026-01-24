@@ -286,18 +286,28 @@ extension CombinedTransition : Transition {
 }
 
 public struct ContentTransition : Equatable, Sendable {
-    public static let identity = ContentTransition()
+    let rawValue: Int
+    
+    private init(rawValue: Int) {
+        self.rawValue = rawValue
+    }
+    
+    public static let identity = ContentTransition(rawValue: 0)
 
-    public static let opacity = ContentTransition()
+    public static let opacity = ContentTransition(rawValue: 1)
 
-    public static let interpolate = ContentTransition()
+    public static let interpolate = ContentTransition(rawValue: 2)
 
     public static func numericText(countsDown: Bool = false) -> ContentTransition {
-        return ContentTransition()
+        return ContentTransition(rawValue: 3)
     }
 
     public static func numericText(value: Double) -> ContentTransition {
-        return ContentTransition()
+        return ContentTransition(rawValue: 3)
+    }
+    
+    public var Java_contentTransition: SkipUI.ContentTransition {
+        return SkipUI.ContentTransition(rawValue: rawValue)
     }
 }
 
@@ -411,9 +421,10 @@ public struct SlideTransition : Transition {
 }
 
 extension View {
-    @available(*, unavailable)
     nonisolated public func contentTransition(_ transition: ContentTransition) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.contentTransition(transition.Java_contentTransition)
+        }
     }
 }
 
