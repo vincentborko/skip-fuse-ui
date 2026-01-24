@@ -16,14 +16,18 @@
 }
 
 extension View {
-    @available(*, unavailable)
-    nonisolated public func safeAreaInset(edge: VerticalEdge, alignment: HorizontalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> any View) -> some View {
-        return self
+    /* @inlinable */ nonisolated public func safeAreaInset<V>(edge: VerticalEdge, alignment: HorizontalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> V) -> some View where V : View {
+        let bridgedContent = content()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.safeAreaInset(bridgedVerticalEdge: Int(edge.rawValue), horizontalAlignmentKey: alignment.key, spacing: spacing, bridgedContent: bridgedContent.Java_viewOrEmpty)
+        }
     }
 
-    @available(*, unavailable)
-    nonisolated public func safeAreaInset(edge: HorizontalEdge, alignment: VerticalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> any View) -> some View {
-        return self
+    /* @inlinable */ nonisolated public func safeAreaInset<V>(edge: HorizontalEdge, alignment: VerticalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> V) -> some View where V : View {
+        let bridgedContent = content()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.safeAreaInset(bridgedHorizontalEdge: Int(edge.rawValue), verticalAlignmentKey: alignment.key, spacing: spacing, bridgedContent: bridgedContent.Java_viewOrEmpty)
+        }
     }
 
     @available(*, unavailable)
