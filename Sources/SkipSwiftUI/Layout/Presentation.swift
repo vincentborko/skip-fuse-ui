@@ -432,9 +432,10 @@ extension View {
         stubView()
     }
 
-    @available(*, unavailable)
     nonisolated public func presentationDragIndicator(_ visibility: Visibility) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.presentationDragIndicator(visibility.rawValue)
+        }
     }
 }
 
@@ -454,9 +455,10 @@ extension View {
         return self
     }
 
-    @available(*, unavailable)
     nonisolated public func presentationCornerRadius(_ cornerRadius: CGFloat?) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.presentationCornerRadiusBridge(cornerRadius)
+        }
     }
 
     nonisolated public func presentationContentInteraction(_ behavior: PresentationContentInteraction) -> some View {
