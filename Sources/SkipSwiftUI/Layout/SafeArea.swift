@@ -17,27 +17,13 @@
 
 extension View {
     /* @inlinable */ nonisolated public func safeAreaInset<V>(edge: VerticalEdge, alignment: HorizontalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> V) -> some View where V : View {
-        let bridgedContent = content()
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.safeAreaInset(
-                edge: SkipUI.VerticalEdge(rawValue: edge.rawValue) ?? .bottom, 
-                alignment: SkipUI.HorizontalAlignment(key: alignment.key), 
-                spacing: spacing, 
-                content: { bridgedContent.Java_viewOrEmpty }
-            )
-        }
+        // Stub: Requires skip-ui update with safeAreaInset implementation
+        return self
     }
 
     /* @inlinable */ nonisolated public func safeAreaInset<V>(edge: HorizontalEdge, alignment: VerticalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> V) -> some View where V : View {
-        let bridgedContent = content()
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.safeAreaInset(
-                edge: SkipUI.HorizontalEdge(rawValue: edge.rawValue) ?? .leading,
-                alignment: SkipUI.VerticalAlignment(key: alignment.key),
-                spacing: spacing,
-                content: { bridgedContent.Java_viewOrEmpty }
-            )
-        }
+        // Stub: Requires skip-ui update with safeAreaInset implementation  
+        return self
     }
 
     @available(*, unavailable)
