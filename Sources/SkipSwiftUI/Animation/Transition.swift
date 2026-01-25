@@ -306,9 +306,7 @@ public struct ContentTransition : Equatable, Sendable {
         return ContentTransition(rawValue: 3)
     }
     
-    public var Java_contentTransition: SkipUI.ContentTransition {
-        return SkipUI.ContentTransition(rawValue: rawValue)
-    }
+    // ContentTransition bridging removed - type is not available in SkipUI during bridge generation
 }
 
 public struct IdentityTransition : Transition {

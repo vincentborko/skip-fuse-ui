@@ -316,8 +316,6 @@ public protocol ScrollTargetBehavior {
     func updateTarget(_ target: inout ScrollTarget, context: Self.TargetContext)
 
     typealias TargetContext = ScrollTargetBehaviorContext
-
-    var Java_scrollTargetBehavior: any SkipUI.ScrollTargetBehavior { get }
 }
 
 public struct PagingScrollTargetBehavior : ScrollTargetBehavior {
@@ -328,9 +326,7 @@ public struct PagingScrollTargetBehavior : ScrollTargetBehavior {
         // Paging behavior is handled by the SkipUI implementation
     }
 
-    public var Java_scrollTargetBehavior: any SkipUI.ScrollTargetBehavior {
-        return SkipUI.PagingScrollTargetBehavior()
-    }
+    // Bridge removed - PagingScrollTargetBehavior not available during bridge generation
 }
 
 extension ScrollTargetBehavior where Self == PagingScrollTargetBehavior {
@@ -623,21 +619,19 @@ extension View {
         stubView()
     }
 
+    // These methods are not bridged in skip-ui, so they cannot be called from skip-fuse-ui
+    @available(*, unavailable)
     nonisolated public func scrollTarget(isEnabled: Bool = true) -> some View {
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.scrollTarget(isEnabled: isEnabled)
-        }
+        return self
     }
 
+    @available(*, unavailable)
     nonisolated public func scrollTargetBehavior(_ behavior: some ScrollTargetBehavior) -> some View {
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.scrollTargetBehavior(behavior.Java_scrollTargetBehavior)
-        }
+        return self
     }
 
+    @available(*, unavailable)
     nonisolated public func scrollTargetLayout(isEnabled: Bool = true) -> some View {
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.scrollTargetLayout(isEnabled: isEnabled)
-        }
+        return self
     }
 }
