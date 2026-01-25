@@ -59,9 +59,8 @@ extension Gesture {
 }
 
 extension Gesture {
-    @available(*, unavailable)
     @MainActor /* @inlinable */ @preconcurrency public func simultaneously<Other>(with other: Other) -> SimultaneousGesture<Self, Other> where Other : Gesture {
-        fatalError()
+        return SimultaneousGesture(first: self, second: other)
     }
 }
 
@@ -301,21 +300,6 @@ extension LongPressGesture : Gesture {
     }
 }
 
-public struct MagnificationGesture {
-    public var minimumScaleDelta: CGFloat
-
-    @available(*, unavailable)
-    public init(minimumScaleDelta: CGFloat = 0.01) {
-        self.minimumScaleDelta = minimumScaleDelta
-    }
-}
-
-extension MagnificationGesture : Gesture {
-    public typealias Value = CGFloat
-    public var body: Never { fatalError("Never") }
-
-    public var Java_gesture: any BridgedGesture { fatalError("Never") }
-}
 
 public struct MagnifyGesture {
     public struct Value : Equatable, Sendable {
@@ -381,21 +365,9 @@ extension RotateGesture : Gesture {
     }
 }
 
-public struct RotationGesture {
-    public var minimumAngleDelta: Angle
-
-    @available(*, unavailable)
-    public init(minimumAngleDelta: Angle = .degrees(1)) {
-        self.minimumAngleDelta = minimumAngleDelta
-    }
-}
-
-extension RotationGesture : Gesture {
-    public typealias Value = Angle
-    public var body: Never { fatalError("Never") }
-
-    public var Java_gesture: any SkipUI.BridgedGesture { fatalError("Never") }
-}
+// Legacy type aliases (pre-iOS 17) 
+public typealias MagnificationGesture = MagnifyGesture
+public typealias RotationGesture = RotateGesture
 
 /* @frozen */public struct SequenceGesture<First, Second> where First : Gesture, Second : Gesture {
     @frozen public enum Value {
@@ -426,7 +398,7 @@ extension SequenceGesture.Value : Equatable where First.Value : Equatable, Secon
 }
 
 /* @frozen */public struct SimultaneousGesture<First, Second> where First : Gesture, Second : Gesture {
-    @frozen public struct Value {
+    @frozen public struct Value : Equatable where First.Value : Equatable, Second.Value : Equatable {
         public var first: First.Value?
         public var second: Second.Value?
     }
@@ -434,27 +406,27 @@ extension SequenceGesture.Value : Equatable where First.Value : Equatable, Secon
     public var first: First
     public var second: Second
 
-    @available(*, unavailable)
-    /* @inlinable */public init(_ first: First, _ second: Second) {
+    /* @inlinable */public init(first: First, second: Second) {
         self.first = first
         self.second = second
     }
 }
 
 extension SimultaneousGesture : Gesture {
+    public typealias Body = Never
+    
     public var body: Never { fatalError("Never") }
 
-    public var Java_gesture: any SkipUI.BridgedGesture { fatalError("Never") }
+    public var Java_gesture: any SkipUI.BridgedGesture {
+        // Bridge to SkipUI's SimultaneousGesture - need to handle the generic bridging
+        fatalError("SimultaneousGesture bridging not yet implemented")
+    }
 }
 
 //extension SimultaneousGesture.Value : Sendable where First.Value : Sendable, Second.Value : Sendable {
 //}
 
-extension SimultaneousGesture.Value : Equatable where First.Value : Equatable, Second.Value : Equatable {
-}
-
-extension SimultaneousGesture.Value : Hashable where First.Value : Hashable, Second.Value : Hashable {
-}
+// Value conformances are already on the struct itself
 
 public struct TapGesture {
     public var count: Int
