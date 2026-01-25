@@ -12,24 +12,20 @@ public struct PresentationAdaptation : Sendable {
         return PresentationAdaptation()
     }
 
-    @available(*, unavailable)
     public static var none: PresentationAdaptation {
-        fatalError()
+        return PresentationAdaptation()
     }
 
-    @available(*, unavailable)
     public static var popover: PresentationAdaptation {
-        fatalError()
+        return PresentationAdaptation()
     }
 
-    @available(*, unavailable)
     public static var sheet: PresentationAdaptation {
-        fatalError()
+        return PresentationAdaptation()
     }
 
-    @available(*, unavailable)
     public static var fullScreenCover: PresentationAdaptation {
-        fatalError()
+        return PresentationAdaptation()
     }
 }
 
@@ -38,14 +34,12 @@ public struct PresentationBackgroundInteraction : Sendable {
         return PresentationBackgroundInteraction()
     }
 
-    @available(*, unavailable)
     public static var enabled: PresentationBackgroundInteraction {
-        fatalError()
+        return PresentationBackgroundInteraction()
     }
 
-    @available(*, unavailable)
     public static func enabled(upThrough detent: PresentationDetent) -> PresentationBackgroundInteraction {
-        fatalError()
+        return PresentationBackgroundInteraction()
     }
 
     public static var disabled: PresentationBackgroundInteraction {
@@ -58,9 +52,8 @@ public struct PresentationContentInteraction : Equatable /*, Sendable */ {
         return PresentationContentInteraction()
     }
 
-    @available(*, unavailable)
     public static var resizes: PresentationContentInteraction {
-        fatalError()
+        return PresentationContentInteraction()
     }
 
     public static var scrolls: PresentationContentInteraction {
@@ -441,18 +434,21 @@ extension View {
 
 extension View {
     nonisolated public func presentationBackgroundInteraction(_ interaction: PresentationBackgroundInteraction) -> some View {
-        // Only .automatic is @available, so we can return self
-        return self
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.presentationBackgroundInteraction(interaction)
+        }
     }
 
     nonisolated public func presentationCompactAdaptation(_ adaptation: PresentationAdaptation) -> some View {
-        // Only .automatic is @available, so we can return self
-        return self
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.presentationCompactAdaptation(adaptation)
+        }
     }
 
     nonisolated public func presentationCompactAdaptation(horizontal horizontalAdaptation: PresentationAdaptation, vertical verticalAdaptation: PresentationAdaptation) -> some View {
-        // Only .automatic is @available, so we can return self
-        return self
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.presentationCompactAdaptation(horizontal: horizontalAdaptation, vertical: verticalAdaptation)
+        }
     }
 
     nonisolated public func presentationCornerRadius(_ cornerRadius: CGFloat?) -> some View {
