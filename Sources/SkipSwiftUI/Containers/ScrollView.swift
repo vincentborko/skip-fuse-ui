@@ -326,7 +326,11 @@ public struct PagingScrollTargetBehavior : ScrollTargetBehavior {
         // Paging behavior is handled by the SkipUI implementation
     }
 
-    // Bridge removed - PagingScrollTargetBehavior not available during bridge generation
+    #if !SKIP_BRIDGE
+    public var Java_scrollTargetBehavior: any SkipUI.ScrollTargetBehavior {
+        return SkipUI.PagingScrollTargetBehavior()
+    }
+    #endif
 }
 
 extension ScrollTargetBehavior where Self == PagingScrollTargetBehavior {
@@ -380,9 +384,11 @@ public struct ViewAlignedScrollTargetBehavior : ScrollTargetBehavior {
         fatalError()
     }
 
+    #if !SKIP_BRIDGE
     public var Java_scrollTargetBehavior: any SkipUI.ScrollTargetBehavior {
         return SkipUI.ViewAlignedScrollTargetBehavior(bridgedLimitBehavior: limitBehavior.identifier)
     }
+    #endif
 }
 
 extension ScrollTargetBehavior where Self == ViewAlignedScrollTargetBehavior {
@@ -619,7 +625,33 @@ extension View {
         stubView()
     }
 
-    // These methods are not bridged in skip-ui, so they cannot be called from skip-fuse-ui
+    #if !SKIP_BRIDGE
+    nonisolated public func scrollTarget(isEnabled: Bool = true) -> some View {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.scrollTarget(isEnabled: isEnabled)
+        }
+    }
+
+    nonisolated public func scrollTargetBehavior(_ behavior: some ScrollTargetBehavior) -> some View {
+        return ModifierView(target: self) {
+            var javaBehavior: any SkipUI.ScrollTargetBehavior
+            if behavior is PagingScrollTargetBehavior {
+                javaBehavior = SkipUI.PagingScrollTargetBehavior()
+            } else if let viewAligned = behavior as? ViewAlignedScrollTargetBehavior {
+                javaBehavior = viewAligned.Java_scrollTargetBehavior
+            } else {
+                javaBehavior = SkipUI.ViewAlignedScrollTargetBehavior(bridgedLimitBehavior: 0)
+            }
+            return $0.Java_viewOrEmpty.scrollTargetBehavior(javaBehavior)
+        }
+    }
+
+    nonisolated public func scrollTargetLayout(isEnabled: Bool = true) -> some View {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.scrollTargetLayout(isEnabled: isEnabled)
+        }
+    }
+    #else
     @available(*, unavailable)
     nonisolated public func scrollTarget(isEnabled: Bool = true) -> some View {
         return self
@@ -634,4 +666,5 @@ extension View {
     nonisolated public func scrollTargetLayout(isEnabled: Bool = true) -> some View {
         return self
     }
+    #endif
 }
