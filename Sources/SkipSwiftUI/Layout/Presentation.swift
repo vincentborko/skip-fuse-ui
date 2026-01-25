@@ -425,30 +425,30 @@ extension View {
         stubView()
     }
 
+    @available(*, unavailable, message: "presentationDragIndicator is not available in skip-ui - requires Kotlin implementation")
     nonisolated public func presentationDragIndicator(_ visibility: Visibility) -> some View {
-        // Stub: Requires skip-ui update with presentationDragIndicator bridge method
         return self
     }
 }
 
 extension View {
     nonisolated public func presentationBackgroundInteraction(_ interaction: PresentationBackgroundInteraction) -> some View {
-        // Stub: Requires skip-ui update with PresentationBackgroundInteraction type
+        // Only .automatic is @available, so we can return self
         return self
     }
 
     nonisolated public func presentationCompactAdaptation(_ adaptation: PresentationAdaptation) -> some View {
-        // Stub: Requires skip-ui update with these methods
+        // Only .automatic is @available, so we can return self
         return self
     }
 
     nonisolated public func presentationCompactAdaptation(horizontal horizontalAdaptation: PresentationAdaptation, vertical verticalAdaptation: PresentationAdaptation) -> some View {
-        // Stub: Requires skip-ui update with these methods
+        // Only .automatic is @available, so we can return self
         return self
     }
 
+    @available(*, unavailable, message: "presentationCornerRadius is not available in skip-ui - requires Kotlin implementation")
     nonisolated public func presentationCornerRadius(_ cornerRadius: CGFloat?) -> some View {
-        // Stub: Requires skip-ui update with presentationCornerRadiusBridge method
         return self
     }
 

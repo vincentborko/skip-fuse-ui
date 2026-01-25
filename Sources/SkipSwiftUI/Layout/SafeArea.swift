@@ -16,13 +16,13 @@
 }
 
 extension View {
+    @available(*, unavailable, message: "safeAreaInset is not available in skip-ui - requires Kotlin implementation")
     /* @inlinable */ nonisolated public func safeAreaInset<V>(edge: VerticalEdge, alignment: HorizontalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> V) -> some View where V : View {
-        // Stub: Requires skip-ui update with safeAreaInset implementation
         return self
     }
 
+    @available(*, unavailable, message: "safeAreaInset is not available in skip-ui - requires Kotlin implementation")
     /* @inlinable */ nonisolated public func safeAreaInset<V>(edge: HorizontalEdge, alignment: VerticalAlignment = .center, spacing: CGFloat? = nil, @ViewBuilder content: () -> V) -> some View where V : View {
-        // Stub: Requires skip-ui update with safeAreaInset implementation  
         return self
     }
 

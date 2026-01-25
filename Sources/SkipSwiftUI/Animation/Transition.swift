@@ -420,15 +420,12 @@ public struct SlideTransition : Transition {
     }
 }
 
-// Note: contentTransition is marked with @bridge in skip-ui and should be auto-bridged
-// Commenting out manual bridge to avoid conflicts
-// extension View {
-//     nonisolated public func contentTransition(_ transition: ContentTransition) -> some View {
-//         return ModifierView(target: self) {
-//             $0.Java_viewOrEmpty.contentTransition(transition.Java_contentTransition)
-//         }
-//     }
-// }
+extension View {
+    @available(*, unavailable, message: "contentTransition is not available in skip-ui - requires Kotlin implementation")
+    nonisolated public func contentTransition(_ transition: ContentTransition) -> some View {
+        return self
+    }
+}
 
 extension View {
     /* @inlinable */ nonisolated public func transition(_ t: AnyTransition) -> some View {
