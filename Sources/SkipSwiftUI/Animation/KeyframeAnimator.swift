@@ -51,32 +51,11 @@ public struct KeyframeAnimator<Value, KeyframePath, Content>: View
 }
 
 extension KeyframeAnimator: SkipUIBridging {
-    // Bridge support
+    // Bridge support - KeyframeAnimator has complex type constraints that make bridging difficult
     nonisolated public var Java_view: any SkipUI.View {
-        // KeyframeAnimator is not yet available in skip-ui, so return a placeholder
+        // For now, return a placeholder due to complex bridging requirements
+        // KeyframeAnimator requires full keyframe track parsing which is complex with Skip's limitations
         return SkipUI.EmptyView()
-        
-        // TODO: Uncomment when KeyframeAnimator is available in skip-ui
-        /*
-        if let trigger = trigger {
-            return SkipUI.KeyframeAnimator(
-                initialValue: initialValue,
-                trigger: trigger,
-                content: { value in
-                    content(value).Java_viewOrEmpty
-                },
-                keyframes: keyframes
-            )
-        } else {
-            return SkipUI.KeyframeAnimator(
-                initialValue: initialValue,
-                content: { value in
-                    content(value).Java_viewOrEmpty
-                },
-                keyframes: keyframes
-            )
-        }
-        */
     }
 }
 

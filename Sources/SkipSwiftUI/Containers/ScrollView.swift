@@ -617,6 +617,16 @@ extension View {
         stubView()
     }
 
+    @available(*, unavailable)
+    nonisolated public func scrollPosition(initialAnchor: UnitPoint?) -> some View {
+        stubView()
+    }
+
+    @available(*, unavailable)
+    nonisolated public func defaultScrollAnchor(_ anchor: UnitPoint?) -> some View {
+        stubView()
+    }
+
     // Note: scrollPosition with Binding is implemented in skip-ui but
     // bridging the generic Hashable binding is complex due to type constraints
     nonisolated public func scrollPosition(id: Binding<(some Hashable)?>, anchor: UnitPoint? = nil) -> some View {

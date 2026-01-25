@@ -39,22 +39,10 @@ public struct PhaseAnimator<Phase, Content>: View where Phase: Equatable, Conten
 }
 
 extension PhaseAnimator: SkipUIBridging {
-    // Bridge support
+    // Bridge support - PhaseAnimator bridging has actor isolation challenges
     nonisolated public var Java_view: any SkipUI.View {
-        // PhaseAnimator is not yet available in skip-ui, so return a placeholder
+        // For now, return a placeholder due to bridging complexity
+        // PhaseAnimator would need special handling for trigger and closure bridging
         return SkipUI.EmptyView()
-        
-        // TODO: Uncomment when PhaseAnimator is available in skip-ui
-        /*
-        if let trigger = trigger {
-            return SkipUI.PhaseAnimator(phases, trigger: trigger, content: { phase in
-                content(phase).Java_viewOrEmpty
-            }, animation: animation)
-        } else {
-            return SkipUI.PhaseAnimator(phases, content: { phase in
-                content(phase).Java_viewOrEmpty
-            }, animation: animation)
-        }
-        */
     }
 }
