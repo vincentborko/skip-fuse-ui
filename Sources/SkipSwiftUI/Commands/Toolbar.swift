@@ -675,13 +675,6 @@ extension View {
         stubView()
     }
 
-    nonisolated public func toolbar<Content>(@ViewBuilder content: () -> Content) -> some View where Content : View {
-        let content = content()
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.toolbar(id: "", bridgedContent: content.Java_viewOrEmpty)
-        }
-    }
-
     nonisolated public func toolbar<Content>(@ToolbarContentBuilder content: () -> Content) -> some View where Content : ToolbarContent {
         let content = content()
         return ModifierView(target: self) {
