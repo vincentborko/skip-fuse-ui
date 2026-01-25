@@ -30,9 +30,51 @@ extension List : View {
 
 extension List : SkipUIBridging {
     public var Java_view: any SkipUI.View {
-        // TODO: Bridge selection bindings to skip-ui
-        // For now, just bridge the content without selection
-        return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
+        // Bridge selection bindings using closure-based parameters
+        if let singleSelection = self.singleSelection {
+            let getSingleSelection = { singleSelection.wrappedValue as AnyHashable? }
+            let setSingleSelection = { (newValue: AnyHashable?) in
+                if let typedValue = newValue as? SelectionValue {
+                    singleSelection.wrappedValue = typedValue
+                } else {
+                    singleSelection.wrappedValue = nil
+                }
+            }
+            
+            if let multiSelection = self.multiSelection {
+                let getMultiSelection = { Set(multiSelection.wrappedValue.map { $0 as AnyHashable }) }
+                let setMultiSelection = { (newValue: Set<AnyHashable>) in
+                    let typedSet: Set<SelectionValue> = Set(newValue.compactMap { $0 as? SelectionValue })
+                    multiSelection.wrappedValue = typedSet
+                }
+                return SkipUI.List(
+                    bridgedContent: content.Java_viewOrEmpty,
+                    getSingleSelection: getSingleSelection,
+                    setSingleSelection: setSingleSelection,
+                    getMultiSelection: getMultiSelection,
+                    setMultiSelection: setMultiSelection
+                )
+            } else {
+                return SkipUI.List(
+                    bridgedContent: content.Java_viewOrEmpty,
+                    getSingleSelection: getSingleSelection,
+                    setSingleSelection: setSingleSelection
+                )
+            }
+        } else if let multiSelection = self.multiSelection {
+            let getMultiSelection = { Set(multiSelection.wrappedValue.map { $0 as AnyHashable }) }
+            let setMultiSelection = { (newValue: Set<AnyHashable>) in
+                let typedSet: Set<SelectionValue> = Set(newValue.compactMap { $0 as? SelectionValue })
+                multiSelection.wrappedValue = typedSet
+            }
+            return SkipUI.List(
+                bridgedContent: content.Java_viewOrEmpty,
+                getMultiSelection: getMultiSelection,
+                setMultiSelection: setMultiSelection
+            )
+        } else {
+            return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
+        }
     }
 }
 
