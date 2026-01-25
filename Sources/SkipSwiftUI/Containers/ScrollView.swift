@@ -618,9 +618,17 @@ extension View {
         stubView()
     }
 
+    // Note: scrollPosition with Binding is implemented in skip-ui but
+    // bridging the generic Hashable binding is complex due to type constraints
     @available(*, unavailable)
     nonisolated public func scrollPosition(id: Binding<(some Hashable)?>, anchor: UnitPoint? = nil) -> some View {
         stubView()
+    }
+
+    nonisolated public func scrollTarget(isEnabled: Bool = true) -> some View {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.scrollTarget(isEnabled: isEnabled)
+        }
     }
 
     nonisolated public func scrollTargetBehavior(_ behavior: some ScrollTargetBehavior) -> some View {
