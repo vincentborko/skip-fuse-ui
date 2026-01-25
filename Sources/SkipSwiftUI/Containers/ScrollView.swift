@@ -321,23 +321,21 @@ public protocol ScrollTargetBehavior {
 }
 
 public struct PagingScrollTargetBehavior : ScrollTargetBehavior {
-    @available(*, unavailable)
     public init() {
     }
 
     public func updateTarget(_ target: inout ScrollTarget, context: PagingScrollTargetBehavior.TargetContext) {
-        fatalError()
+        // Paging behavior is handled by the SkipUI implementation
     }
 
     public var Java_scrollTargetBehavior: any SkipUI.ScrollTargetBehavior {
-        fatalError()
+        return SkipUI.PagingScrollTargetBehavior()
     }
 }
 
 extension ScrollTargetBehavior where Self == PagingScrollTargetBehavior {
-    @available(*, unavailable)
     public static var paging: PagingScrollTargetBehavior {
-        fatalError()
+        return PagingScrollTargetBehavior()
     }
 }
 
