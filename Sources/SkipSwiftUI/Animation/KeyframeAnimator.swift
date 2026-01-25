@@ -4,12 +4,17 @@
 import Foundation
 import SkipUI
 
-// Use SkipUI's protocols
-public typealias Animatable = SkipUI.Animatable
-public typealias Keyframes = SkipUI.Keyframes
-public typealias KeyframeTrackContent = SkipUI.KeyframeTrackContent
+// Local protocols since SkipUI types are not available for bridging
+// Note: Animatable is already defined in Animation.swift
+public protocol Keyframes {
+    // Protocol for keyframe sequences
+}
 
-public struct KeyframeAnimator<Value, KeyframePath, Content>: View, SkipUIBridging
+public protocol KeyframeTrackContent {
+    // Protocol for keyframe track content
+}
+
+public struct KeyframeAnimator<Value, KeyframePath, Content>: View
     where Value: Animatable, KeyframePath: Keyframes, Content: View {
     
     private let initialValue: Value
@@ -20,7 +25,7 @@ public struct KeyframeAnimator<Value, KeyframePath, Content>: View, SkipUIBridgi
     public init(
         initialValue: Value,
         @ViewBuilder content: @escaping (Value) -> Content,
-        @KeyframesBuilder<Value> keyframes: () -> KeyframePath
+        @KeyframesBuilder<Value> keyframes: @escaping () -> KeyframePath
     ) {
         self.initialValue = initialValue
         self.trigger = nil
@@ -28,11 +33,11 @@ public struct KeyframeAnimator<Value, KeyframePath, Content>: View, SkipUIBridgi
         self.keyframes = keyframes
     }
     
-    public init<Trigger: Equatable>(
+    public init<Trigger: Equatable & Hashable>(
         initialValue: Value,
         trigger: Trigger,
         @ViewBuilder content: @escaping (Value) -> Content,
-        @KeyframesBuilder<Value> keyframes: () -> KeyframePath
+        @KeyframesBuilder<Value> keyframes: @escaping () -> KeyframePath
     ) {
         self.initialValue = initialValue
         self.trigger = AnyHashable(trigger)
@@ -45,9 +50,14 @@ public struct KeyframeAnimator<Value, KeyframePath, Content>: View, SkipUIBridgi
     }
 }
 
-
+extension KeyframeAnimator: SkipUIBridging {
     // Bridge support
     nonisolated public var Java_view: any SkipUI.View {
+        // KeyframeAnimator is not yet available in skip-ui, so return a placeholder
+        return SkipUI.EmptyView()
+        
+        // TODO: Uncomment when KeyframeAnimator is available in skip-ui
+        /*
         if let trigger = trigger {
             return SkipUI.KeyframeAnimator(
                 initialValue: initialValue,
@@ -66,10 +76,28 @@ public struct KeyframeAnimator<Value, KeyframePath, Content>: View, SkipUIBridgi
                 keyframes: keyframes
             )
         }
+        */
     }
 }
 
-// Re-export SkipUI builders
-public typealias KeyframesBuilder = SkipUI.KeyframesBuilder
-public typealias KeyframeTrackContentBuilder = SkipUI.KeyframeTrackContentBuilder
-public typealias KeyframeTrack = SkipUI.KeyframeTrack
+// Local builder types since SkipUI types are not available for bridging
+@resultBuilder
+public struct KeyframesBuilder<Value> where Value: Animatable {
+    public static func buildBlock<K>(_ keyframes: K) -> K where K: Keyframes {
+        return keyframes
+    }
+}
+
+@resultBuilder
+public struct KeyframeTrackContentBuilder<Value> where Value: Animatable {
+    public static func buildBlock<K>(_ keyframe: K) -> K where K: KeyframeTrackContent {
+        return keyframe
+    }
+}
+
+public struct KeyframeTrack<Root, Value, Content>: Keyframes where Value: Animatable {
+    // Simplified implementation for bridging
+    public init(_ keyPath: WritableKeyPath<Root, Value>, @KeyframeTrackContentBuilder<Value> content: @escaping () -> Content) {
+        // Bridge implementation - simplified
+    }
+}

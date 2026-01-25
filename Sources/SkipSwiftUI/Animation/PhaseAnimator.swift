@@ -4,7 +4,7 @@
 import Foundation
 import SkipUI
 
-public struct PhaseAnimator<Phase, Content>: View, SkipUIBridging where Phase: Equatable, Content: View {
+public struct PhaseAnimator<Phase, Content>: View where Phase: Equatable, Content: View {
     private let phases: [Phase]
     private let trigger: AnyHashable?
     private let content: (Phase) -> Content
@@ -21,7 +21,7 @@ public struct PhaseAnimator<Phase, Content>: View, SkipUIBridging where Phase: E
         self.animation = animation
     }
     
-    public init<Trigger: Equatable>(
+    public init<Trigger: Equatable & Hashable>(
         _ phases: [Phase],
         trigger: Trigger,
         @ViewBuilder content: @escaping (Phase) -> Content,
@@ -38,8 +38,14 @@ public struct PhaseAnimator<Phase, Content>: View, SkipUIBridging where Phase: E
     }
 }
 
+extension PhaseAnimator: SkipUIBridging {
     // Bridge support
     nonisolated public var Java_view: any SkipUI.View {
+        // PhaseAnimator is not yet available in skip-ui, so return a placeholder
+        return SkipUI.EmptyView()
+        
+        // TODO: Uncomment when PhaseAnimator is available in skip-ui
+        /*
         if let trigger = trigger {
             return SkipUI.PhaseAnimator(phases, trigger: trigger, content: { phase in
                 content(phase).Java_viewOrEmpty
@@ -49,5 +55,6 @@ public struct PhaseAnimator<Phase, Content>: View, SkipUIBridging where Phase: E
                 content(phase).Java_viewOrEmpty
             }, animation: animation)
         }
+        */
     }
 }
