@@ -398,7 +398,7 @@ extension SequenceGesture.Value : Equatable where First.Value : Equatable, Secon
 }
 
 /* @frozen */public struct SimultaneousGesture<First, Second> where First : Gesture, Second : Gesture {
-    @frozen public struct Value : Equatable where First.Value : Equatable, Second.Value : Equatable {
+    @frozen public struct Value {
         public var first: First.Value?
         public var second: Second.Value?
     }
@@ -413,6 +413,7 @@ extension SequenceGesture.Value : Equatable where First.Value : Equatable, Secon
 }
 
 extension SimultaneousGesture : Gesture {
+    // Value is already defined as a nested struct
     public typealias Body = Never
     
     public var body: Never { fatalError("Never") }
@@ -426,7 +427,8 @@ extension SimultaneousGesture : Gesture {
 //extension SimultaneousGesture.Value : Sendable where First.Value : Sendable, Second.Value : Sendable {
 //}
 
-// Value conformances are already on the struct itself
+extension SimultaneousGesture.Value : Equatable where First.Value : Equatable, Second.Value : Equatable {
+}
 
 public struct TapGesture {
     public var count: Int
