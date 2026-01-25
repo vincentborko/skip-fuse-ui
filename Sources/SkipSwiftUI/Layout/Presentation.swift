@@ -427,7 +427,7 @@ extension View {
 
     nonisolated public func presentationDragIndicator(_ visibility: Visibility) -> some View {
         return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.presentationDragIndicator(visibility.rawValue)
+            $0.Java_viewOrEmpty.presentationDragIndicator(SkipUI.Visibility(rawValue: visibility.rawValue) ?? SkipUI.Visibility.automatic)
         }
     }
 }
@@ -435,25 +435,28 @@ extension View {
 extension View {
     nonisolated public func presentationBackgroundInteraction(_ interaction: PresentationBackgroundInteraction) -> some View {
         return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.presentationBackgroundInteraction(interaction)
+            $0.Java_viewOrEmpty.presentationBackgroundInteraction(SkipUI.PresentationBackgroundInteraction(rawValue: interaction.rawValue) ?? SkipUI.PresentationBackgroundInteraction.automatic)
         }
     }
 
     nonisolated public func presentationCompactAdaptation(_ adaptation: PresentationAdaptation) -> some View {
         return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.presentationCompactAdaptation(adaptation)
+            $0.Java_viewOrEmpty.presentationCompactAdaptation(SkipUI.PresentationAdaptation(rawValue: adaptation.rawValue) ?? SkipUI.PresentationAdaptation.automatic)
         }
     }
 
     nonisolated public func presentationCompactAdaptation(horizontal horizontalAdaptation: PresentationAdaptation, vertical verticalAdaptation: PresentationAdaptation) -> some View {
         return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.presentationCompactAdaptation(horizontal: horizontalAdaptation, vertical: verticalAdaptation)
+            $0.Java_viewOrEmpty.presentationCompactAdaptation(
+                horizontal: SkipUI.PresentationAdaptation(rawValue: horizontalAdaptation.rawValue) ?? SkipUI.PresentationAdaptation.automatic,
+                vertical: SkipUI.PresentationAdaptation(rawValue: verticalAdaptation.rawValue) ?? SkipUI.PresentationAdaptation.automatic
+            )
         }
     }
 
     nonisolated public func presentationCornerRadius(_ cornerRadius: CGFloat?) -> some View {
         return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.presentationCornerRadiusBridge(cornerRadius)
+            $0.Java_viewOrEmpty.presentationCornerRadius(cornerRadius)
         }
     }
 

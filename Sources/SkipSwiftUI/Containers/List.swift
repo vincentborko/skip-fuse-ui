@@ -6,21 +6,14 @@ import CoreGraphics
 import SkipBridge
 import SkipUI
 
+// Temporarily simplified - List selection bridging requires matching constructor signatures with skip-ui
+// TODO: Properly implement generic selection bridging once skip-ui supports it
+
 public struct List<SelectionValue, Content> where SelectionValue : Hashable, Content : View {
     private let content: Content
-    private let singleSelection: Binding<SelectionValue?>?
-    private let multiSelection: Binding<Set<SelectionValue>>?
 
-    public init(selection: Binding<Set<SelectionValue>>?, @ViewBuilder content: () -> Content) {
+    public init(@ViewBuilder content: () -> Content) {
         self.content = content()
-        self.singleSelection = nil
-        self.multiSelection = selection
-    }
-
-    public init(selection: Binding<SelectionValue?>?, @ViewBuilder content: () -> Content) {
-        self.content = content()
-        self.singleSelection = selection
-        self.multiSelection = nil
     }
 }
 
@@ -30,21 +23,13 @@ extension List : View {
 
 extension List : SkipUIBridging {
     public var Java_view: any SkipUI.View {
-        if let singleSelection {
-            return SkipUI.List(selection: SkipUI.Binding(get: { singleSelection.wrappedValue }, set: { singleSelection.wrappedValue = $0 }), content: { content.Java_viewOrEmpty })
-        } else if let multiSelection {
-            return SkipUI.List(selection: SkipUI.Binding(get: { multiSelection.wrappedValue }, set: { multiSelection.wrappedValue = $0 }), content: { content.Java_viewOrEmpty })
-        } else {
-            return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
-        }
+        return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
     }
 }
 
 extension List {
     public init<Data, RowContent>(_ data: Data, selection: Binding<Set<SelectionValue>>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable {
         self.content = ForEach(data, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = selection
     }
 
     @available(*, unavailable)
@@ -54,8 +39,6 @@ extension List {
 
     public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<Set<SelectionValue>>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View {
         self.content = ForEach(data, id: id, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = selection
     }
 
     @available(*, unavailable)
@@ -70,8 +53,6 @@ extension List {
 
     public init<Data, RowContent>(_ data: Data, selection: Binding<SelectionValue?>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable {
         self.content = ForEach(data, content: rowContent)
-        self.singleSelection = selection
-        self.multiSelection = nil
     }
 
     @available(*, unavailable)
@@ -81,8 +62,6 @@ extension List {
 
     public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<SelectionValue?>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View {
         self.content = ForEach(data, id: id, content: rowContent)
-        self.singleSelection = selection
-        self.multiSelection = nil
     }
 
     @available(*, unavailable)
@@ -99,14 +78,10 @@ extension List {
 extension List where SelectionValue == Never {
     public init(@ViewBuilder content: () -> Content) {
         self.content = content()
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 
     public init<Data, RowContent>(_ data: Data, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable {
         self.content = ForEach(data, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 
     @available(*, unavailable)
@@ -116,8 +91,6 @@ extension List where SelectionValue == Never {
 
     public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View {
         self.content = ForEach(data, id: id, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 
     @available(*, unavailable)
@@ -127,8 +100,6 @@ extension List where SelectionValue == Never {
 
     public init<RowContent>(_ data: Range<Int>, @ViewBuilder rowContent: @escaping (Int) -> RowContent) where Content == ForEach<Range<Int>, Int, RowContent>, RowContent : View {
         self.content = ForEach(data, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 }
 
@@ -157,14 +128,10 @@ extension List {
 extension List where SelectionValue == Never {
     public init<Data, RowContent>(_ data: Binding<Data>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<LazyMapSequence<Data.Indices, (Data.Index, Data.Element.ID)>, Data.Element.ID, RowContent>, Data : MutableCollection, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable, Data.Index : Hashable {
         self.content = ForEach(data, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 
     public init<Data, ID, RowContent>(_ data: Binding<Data>, id: KeyPath<Data.Element, ID>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<LazyMapSequence<Data.Indices, (Data.Index, ID)>, ID, RowContent>, Data : MutableCollection, Data : RandomAccessCollection, ID : Hashable, RowContent : View, Data.Index : Hashable {
         self.content = ForEach(data, id: id, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 }
 
@@ -230,15 +197,11 @@ extension List where SelectionValue == Never {
 //    public init<Data, RowContent>(_ data: Binding<Data>, editActions: EditActions<Data>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<IndexedIdentifierCollection<Data, Data.Element.ID>, Data.Element.ID, EditableCollectionContent<RowContent, Data>>, Data : MutableCollection, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable, Data.Index : Hashable
     public init<Data, RowContent>(_ data: Binding<Data>, editActions: EditActions<Data>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<IndexedIdentifierCollection<Data, Data.Element.ID>, Data.Element.ID, RowContent>, Data : MutableCollection, Data : RandomAccessCollection, Data : RangeReplaceableCollection, RowContent : View, Data.Element : Identifiable, Data.Index : Hashable {
         self.content = ForEach(data, editActions: editActions, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 
 //    public init<Data, ID, RowContent>(_ data: Binding<Data>, id: KeyPath<Data.Element, ID>, editActions: EditActions<Data>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<IndexedIdentifierCollection<Data, ID>, ID, EditableCollectionContent<RowContent, Data>>, Data : MutableCollection, Data : RandomAccessCollection, ID : Hashable, RowContent : View, Data.Index : Hashable
     public init<Data, ID, RowContent>(_ data: Binding<Data>, id: KeyPath<Data.Element, ID>, editActions: EditActions<Data>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<IndexedIdentifierCollection<Data, ID>, ID, RowContent>, Data : MutableCollection, Data : RandomAccessCollection, Data : RangeReplaceableCollection, RowContent : View, Data.Index : Hashable {
         self.content = ForEach(data, id: id, editActions: editActions, content: rowContent)
-        self.singleSelection = nil
-        self.multiSelection = nil
     }
 }
 

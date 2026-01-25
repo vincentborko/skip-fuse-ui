@@ -420,13 +420,15 @@ public struct SlideTransition : Transition {
     }
 }
 
-extension View {
-    nonisolated public func contentTransition(_ transition: ContentTransition) -> some View {
-        return ModifierView(target: self) {
-            $0.Java_viewOrEmpty.contentTransition(transition.Java_contentTransition)
-        }
-    }
-}
+// Note: contentTransition is marked with @bridge in skip-ui and should be auto-bridged
+// Commenting out manual bridge to avoid conflicts
+// extension View {
+//     nonisolated public func contentTransition(_ transition: ContentTransition) -> some View {
+//         return ModifierView(target: self) {
+//             $0.Java_viewOrEmpty.contentTransition(transition.Java_contentTransition)
+//         }
+//     }
+// }
 
 extension View {
     /* @inlinable */ nonisolated public func transition(_ t: AnyTransition) -> some View {
