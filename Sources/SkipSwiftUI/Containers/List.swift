@@ -11,16 +11,37 @@ public struct List<SelectionValue, Content> where SelectionValue : Hashable, Con
     private let singleSelection: Binding<SelectionValue?>?
     private let multiSelection: Binding<Set<SelectionValue>>?
 
+    // For data-based selection: closures to extract ID and look up element by ID
+    private let getSelectionID: ((SelectionValue) -> SwiftHashable)?
+    private let findElementByID: ((SwiftHashable) -> SelectionValue?)?
+    private let getAllIDs: (([SelectionValue]) -> [SwiftHashable])?
+
     public init(selection: Binding<Set<SelectionValue>>?, @ViewBuilder content: () -> Content) {
         self.content = content()
         self.multiSelection = selection
         self.singleSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 
     public init(selection: Binding<SelectionValue?>?, @ViewBuilder content: () -> Content) {
         self.content = content()
         self.singleSelection = selection
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
+    }
+
+    // Internal init for data-based selection with ID mapping
+    private init(content: Content, singleSelection: Binding<SelectionValue?>?, multiSelection: Binding<Set<SelectionValue>>?, getSelectionID: ((SelectionValue) -> SwiftHashable)?, findElementByID: ((SwiftHashable) -> SelectionValue?)?, getAllIDs: (([SelectionValue]) -> [SwiftHashable])?) {
+        self.content = content
+        self.singleSelection = singleSelection
+        self.multiSelection = multiSelection
+        self.getSelectionID = getSelectionID
+        self.findElementByID = findElementByID
+        self.getAllIDs = getAllIDs
     }
 }
 
@@ -30,59 +51,62 @@ extension List : View {
 
 extension List : SkipUIBridging {
     public var Java_view: any SkipUI.View {
-        // Bridge selection bindings using closure-based parameters
-        if let singleSelection = self.singleSelection {
-            let getSingleSelection = { singleSelection.wrappedValue as AnyHashable? }
-            let setSingleSelection = { (newValue: AnyHashable?) in
-                if let typedValue = newValue as? SelectionValue {
-                    singleSelection.wrappedValue = typedValue
-                } else {
-                    singleSelection.wrappedValue = nil
+        // If we have ID-based bridging (from data-based inits), use it
+        if let getSelectionID = self.getSelectionID, let findElementByID = self.findElementByID {
+            if let singleSelection = self.singleSelection {
+                // Return Any? for bridging compatibility
+                let getSingleSelection: () -> Any? = {
+                    if let value = singleSelection.wrappedValue {
+                        return getSelectionID(value)
+                    }
+                    return nil
                 }
-            }
-            
-            if let multiSelection = self.multiSelection {
-                let getMultiSelection = { Set(multiSelection.wrappedValue.map { $0 as AnyHashable }) }
-                let setMultiSelection = { (newValue: Set<AnyHashable>) in
-                    let typedSet: Set<SelectionValue> = Set(newValue.compactMap { $0 as? SelectionValue })
-                    multiSelection.wrappedValue = typedSet
+                // Accept Any? for bridging compatibility
+                let setSingleSelection: (Any?) -> Void = { newID in
+                    if let newID = newID as? SwiftHashable, let element = findElementByID(newID) {
+                        singleSelection.wrappedValue = element
+                    } else {
+                        singleSelection.wrappedValue = nil
+                    }
                 }
-                return SkipUI.List(
-                    bridgedContent: content.Java_viewOrEmpty,
-                    getSingleSelection: getSingleSelection,
-                    setSingleSelection: setSingleSelection,
-                    getMultiSelection: getMultiSelection,
-                    setMultiSelection: setMultiSelection
-                )
-            } else {
                 return SkipUI.List(
                     bridgedContent: content.Java_viewOrEmpty,
                     getSingleSelection: getSingleSelection,
                     setSingleSelection: setSingleSelection
                 )
+            } else if let multiSelection = self.multiSelection, let getAllIDs = self.getAllIDs {
+                // SwiftHashable conforms to Hashable, so can be in Set<AnyHashable>
+                let getMultiSelection: () -> Set<AnyHashable> = {
+                    Set(getAllIDs(Array(multiSelection.wrappedValue)).map { $0 as AnyHashable })
+                }
+                let setMultiSelection: (Set<AnyHashable>) -> Void = { newIDs in
+                    let elements = newIDs.compactMap { ($0 as? SwiftHashable).flatMap { findElementByID($0) } }
+                    multiSelection.wrappedValue = Set(elements)
+                }
+                return SkipUI.List(
+                    bridgedContent: content.Java_viewOrEmpty,
+                    getMultiSelection: getMultiSelection,
+                    setMultiSelection: setMultiSelection
+                )
             }
-        } else if let multiSelection = self.multiSelection {
-            let getMultiSelection = { Set(multiSelection.wrappedValue.map { $0 as AnyHashable }) }
-            let setMultiSelection = { (newValue: Set<AnyHashable>) in
-                let typedSet: Set<SelectionValue> = Set(newValue.compactMap { $0 as? SelectionValue })
-                multiSelection.wrappedValue = typedSet
-            }
-            return SkipUI.List(
-                bridgedContent: content.Java_viewOrEmpty,
-                getMultiSelection: getMultiSelection,
-                setMultiSelection: setMultiSelection
-            )
-        } else {
-            return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
         }
+
+        // Fallback: no selection or content-only init
+        return SkipUI.List(bridgedContent: content.Java_viewOrEmpty)
     }
 }
 
 extension List {
-    public init<Data, RowContent>(_ data: Data, selection: Binding<Set<SelectionValue>>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable {
-        self.content = ForEach(data, content: rowContent)
-        self.multiSelection = selection
-        self.singleSelection = nil
+    public init<Data, RowContent>(_ data: Data, selection: Binding<Set<SelectionValue>>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable, SelectionValue == Data.Element {
+        let dataArray = Array(data)
+        self.init(
+            content: ForEach(data, content: rowContent),
+            singleSelection: nil,
+            multiSelection: selection,
+            getSelectionID: { element in Java_swiftHashable(for: element.id) },
+            findElementByID: { id in dataArray.first { Java_swiftHashable(for: $0.id) == id } },
+            getAllIDs: { elements in elements.map { Java_swiftHashable(for: $0.id) } }
+        )
     }
 
     @available(*, unavailable)
@@ -90,10 +114,16 @@ extension List {
         fatalError()
     }
 
-    public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<Set<SelectionValue>>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View {
-        self.content = ForEach(data, id: id, content: rowContent)
-        self.multiSelection = selection
-        self.singleSelection = nil
+    public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<Set<SelectionValue>>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View, SelectionValue == Data.Element {
+        let dataArray = Array(data)
+        self.init(
+            content: ForEach(data, id: id, content: rowContent),
+            singleSelection: nil,
+            multiSelection: selection,
+            getSelectionID: { element in Java_swiftHashable(for: element[keyPath: id]) },
+            findElementByID: { swiftHashableID in dataArray.first { Java_swiftHashable(for: $0[keyPath: id]) == swiftHashableID } },
+            getAllIDs: { elements in elements.map { Java_swiftHashable(for: $0[keyPath: id]) } }
+        )
     }
 
     @available(*, unavailable)
@@ -106,10 +136,16 @@ extension List {
         fatalError()
     }
 
-    public init<Data, RowContent>(_ data: Data, selection: Binding<SelectionValue?>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable {
-        self.content = ForEach(data, content: rowContent)
-        self.singleSelection = selection
-        self.multiSelection = nil
+    public init<Data, RowContent>(_ data: Data, selection: Binding<SelectionValue?>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable, SelectionValue == Data.Element {
+        let dataArray = Array(data)
+        self.init(
+            content: ForEach(data, content: rowContent),
+            singleSelection: selection,
+            multiSelection: nil,
+            getSelectionID: { element in Java_swiftHashable(for: element.id) },
+            findElementByID: { id in dataArray.first { Java_swiftHashable(for: $0.id) == id } },
+            getAllIDs: nil
+        )
     }
 
     @available(*, unavailable)
@@ -117,10 +153,16 @@ extension List {
         fatalError()
     }
 
-    public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<SelectionValue?>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View {
-        self.content = ForEach(data, id: id, content: rowContent)
-        self.singleSelection = selection
-        self.multiSelection = nil
+    public init<Data, ID, RowContent>(_ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<SelectionValue?>?, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, ID, RowContent>, Data : RandomAccessCollection, ID : Hashable, RowContent : View, SelectionValue == Data.Element {
+        let dataArray = Array(data)
+        self.init(
+            content: ForEach(data, id: id, content: rowContent),
+            singleSelection: selection,
+            multiSelection: nil,
+            getSelectionID: { element in Java_swiftHashable(for: element[keyPath: id]) },
+            findElementByID: { swiftHashableID in dataArray.first { Java_swiftHashable(for: $0[keyPath: id]) == swiftHashableID } },
+            getAllIDs: nil
+        )
     }
 
     @available(*, unavailable)
@@ -139,12 +181,18 @@ extension List where SelectionValue == Never {
         self.content = content()
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 
     public init<Data, RowContent>(_ data: Data, @ViewBuilder rowContent: @escaping (Data.Element) -> RowContent) where Content == ForEach<Data, Data.Element.ID, RowContent>, Data : RandomAccessCollection, RowContent : View, Data.Element : Identifiable {
         self.content = ForEach(data, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 
     @available(*, unavailable)
@@ -156,6 +204,9 @@ extension List where SelectionValue == Never {
         self.content = ForEach(data, id: id, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 
     @available(*, unavailable)
@@ -167,6 +218,9 @@ extension List where SelectionValue == Never {
         self.content = ForEach(data, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 }
 
@@ -197,12 +251,18 @@ extension List where SelectionValue == Never {
         self.content = ForEach(data, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 
     public init<Data, ID, RowContent>(_ data: Binding<Data>, id: KeyPath<Data.Element, ID>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<LazyMapSequence<Data.Indices, (Data.Index, ID)>, ID, RowContent>, Data : MutableCollection, Data : RandomAccessCollection, ID : Hashable, RowContent : View, Data.Index : Hashable {
         self.content = ForEach(data, id: id, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 }
 
@@ -270,6 +330,9 @@ extension List where SelectionValue == Never {
         self.content = ForEach(data, editActions: editActions, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 
 //    public init<Data, ID, RowContent>(_ data: Binding<Data>, id: KeyPath<Data.Element, ID>, editActions: EditActions<Data>, @ViewBuilder rowContent: @escaping (Binding<Data.Element>) -> RowContent) where Content == ForEach<IndexedIdentifierCollection<Data, ID>, ID, EditableCollectionContent<RowContent, Data>>, Data : MutableCollection, Data : RandomAccessCollection, ID : Hashable, RowContent : View, Data.Index : Hashable
@@ -277,6 +340,9 @@ extension List where SelectionValue == Never {
         self.content = ForEach(data, id: id, editActions: editActions, content: rowContent)
         self.singleSelection = nil
         self.multiSelection = nil
+        self.getSelectionID = nil
+        self.findElementByID = nil
+        self.getAllIDs = nil
     }
 }
 
