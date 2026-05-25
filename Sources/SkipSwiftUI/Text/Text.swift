@@ -553,9 +553,10 @@ extension View {
         stubView()
     }
 
-    @available(*, unavailable)
-    nonisolated public func textSelection(_ selectability: TextSelectability) -> some View {
-        stubView()
+    nonisolated public func textSelection<S>(_ selectability: S) -> some View where S : TextSelectability {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.textSelection(bridgedSelectability: S.allowsSelection ? 1 : 0)
+        }
     }
 
     nonisolated public func truncationMode(_ mode: Text.TruncationMode) -> some View {
