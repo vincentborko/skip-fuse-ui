@@ -342,9 +342,12 @@ extension Text {
         return text
     }
 
-    @available(*, unavailable)
     nonisolated public func monospacedDigit() -> Text {
-        fatalError()
+        var text = self
+        text.modifierChain.append {
+            $0.monospacedDigit()
+        }
+        return text
     }
 
     nonisolated public func strikethrough(_ isActive: Bool = true, pattern: Text.LineStyle.Pattern = .solid, color: Color? = nil) -> Text {
@@ -428,9 +431,10 @@ extension View {
         }
     }
 
-    @available(*, unavailable)
     @_disfavoredOverload nonisolated public func monospacedDigit() -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.bridgedMonospacedDigit()
+        }
     }
 
     @_disfavoredOverload nonisolated public func strikethrough(_ isActive: Bool = true, pattern: Text.LineStyle.Pattern = .solid, color: Color? = nil) -> some View {

@@ -20,14 +20,16 @@ struct FontSpec: Hashable, Sendable {
     var design: Font.Design?
     var size: CGFloat?
     var scaledBy: CGFloat?
+    var isMonospacedDigit: Bool
 
-    init(_ type: FontType, isItalic: Bool = false, weight: Font.Weight? = nil, design: Font.Design? = nil, size: CGFloat? = nil, scaledBy: CGFloat? = nil) {
+    init(_ type: FontType, isItalic: Bool = false, weight: Font.Weight? = nil, design: Font.Design? = nil, size: CGFloat? = nil, scaledBy: CGFloat? = nil, isMonospacedDigit: Bool = false) {
         self.type = type
         self.isItalic = isItalic
         self.weight = weight
         self.design = design
         self.size = size
         self.scaledBy = scaledBy
+        self.isMonospacedDigit = isMonospacedDigit
     }
 
     var Java_font: SkipUI.Font {
@@ -59,6 +61,9 @@ struct FontSpec: Hashable, Sendable {
         }
         if let scaledBy {
             font = font.scaledBy(scaledBy)
+        }
+        if isMonospacedDigit {
+            font = font.monospacedDigit()
         }
         return font
     }
@@ -131,9 +136,10 @@ extension Font {
         fatalError()
     }
 
-    @available(*, unavailable)
     public func monospacedDigit(_ isActive: Bool = true) -> Font {
-        fatalError()
+        var spec = self.spec
+        spec.isMonospacedDigit = isActive
+        return Font(spec: spec)
     }
 
     public func weight(_ weight: Font.Weight) -> Font {
