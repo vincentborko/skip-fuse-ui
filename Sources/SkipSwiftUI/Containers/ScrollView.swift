@@ -122,6 +122,17 @@ public struct ScrollGeometry : Equatable, Sendable {
         self.contentInsets = contentInsets
         self.containerSize = containerSize
     }
+
+    init(javaGeometry: SkipUI.ScrollGeometry) {
+        let (offsetX, offsetY) = javaGeometry.bridgedContentOffset
+        let (contentWidth, contentHeight) = javaGeometry.bridgedContentSize
+        let (containerWidth, containerHeight) = javaGeometry.bridgedContainerSize
+        let (insetTop, insetLeading, insetBottom, insetTrailing) = javaGeometry.bridgedContentInsets
+        self.contentOffset = CGPoint(x: offsetX, y: offsetY)
+        self.contentSize = CGSize(width: contentWidth, height: contentHeight)
+        self.containerSize = CGSize(width: containerWidth, height: containerHeight)
+        self.contentInsets = EdgeInsets(top: insetTop, leading: insetLeading, bottom: insetBottom, trailing: insetTrailing)
+    }
 }
 
 extension ScrollGeometry : CustomDebugStringConvertible {
@@ -647,6 +658,17 @@ extension View {
     nonisolated public func scrollTargetLayout(isEnabled: Bool = true) -> some View {
         return ModifierView(target: self) {
             $0.Java_viewOrEmpty.scrollTargetLayout(isEnabled: isEnabled)
+        }
+    }
+
+    nonisolated public func onScrollGeometryChange<T>(for type: T.Type, of transform: @escaping (ScrollGeometry) -> T, action: @escaping (_ oldValue: T, _ newValue: T) -> Void) -> some View where T : Equatable {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.onScrollGeometryChangeErased(of: { jgeometry in
+                let geometry = ScrollGeometry(javaGeometry: jgeometry)
+                return Java_swiftEquatable(for: transform(geometry))
+            }) { (oldValue: SwiftEquatable, newValue: SwiftEquatable) in
+                action(oldValue.base as! T, newValue.base as! T)
+            }
         }
     }
 }
