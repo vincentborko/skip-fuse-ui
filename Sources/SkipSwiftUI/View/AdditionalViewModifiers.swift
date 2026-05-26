@@ -212,11 +212,13 @@ extension View {
 }
 
 extension View {
-    @available(*, unavailable)
     nonisolated public func controlSize(_ controlSize: ControlSize) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.controlSize(bridgedControlSize: controlSize.bridgedValue)
+        }
     }
 
+    // SwiftUI has no range-based `controlSize` overload, so this remains unavailable.
     @available(*, unavailable)
     nonisolated public func controlSize<T>(_ range: T) -> some View where T : RangeExpression, T.Bound == ControlSize {
         stubView()
