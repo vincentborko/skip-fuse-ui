@@ -42,16 +42,20 @@ public struct ScrollAnchorRole : Hashable, Sendable {
 }
 
 public struct ScrollBounceBehavior : Sendable {
+    // Discriminator forwarded across the bridge; matches SkipUI's `ScrollBounceBehavior` rawValues
+    // (the public statics are otherwise indistinguishable). 0=automatic, 1=always, 2=basedOnSize.
+    let bridgedValue: Int
+
     public static var automatic: ScrollBounceBehavior {
-        return ScrollBounceBehavior()
+        return ScrollBounceBehavior(bridgedValue: 0)
     }
 
     public static var always: ScrollBounceBehavior {
-        return ScrollBounceBehavior()
+        return ScrollBounceBehavior(bridgedValue: 1)
     }
 
     public static var basedOnSize: ScrollBounceBehavior {
-        return ScrollBounceBehavior()
+        return ScrollBounceBehavior(bridgedValue: 2)
     }
 }
 
@@ -591,9 +595,10 @@ extension View {
         return contentMargins(.all, length, for: placement)
     }
 
-    @available(*, unavailable)
     nonisolated public func scrollBounceBehavior(_ behavior: ScrollBounceBehavior, axes: Axis.Set = [.vertical]) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.scrollBounceBehavior(bridgedBehavior: behavior.bridgedValue, bridgedAxes: Int(axes.rawValue))
+        }
     }
 
     @available(*, unavailable)
