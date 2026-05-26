@@ -73,15 +73,97 @@ public struct SymbolColorRenderingMode : Equatable, Sendable {
     public static let gradient = SymbolColorRenderingMode()
 }
 
+// MARK: - SymbolEffect
+
+// SwiftUI's symbol-effect surface, modeled here so the app's `.symbolEffect(.pulse, …)` / `.symbolEffect(.bounce, value:)`
+// call sites compile on the Skip path. SF Symbols render on Android as a single Material `ImageVector` (no per-layer
+// access), so the bridge supports the whole-glyph transform/opacity effects — `.pulse`, `.bounce`, `.scale` — which map
+// cleanly onto a Compose `graphicsLayer` animation in skip-ui. Layer-walking effects (`.variableColor`) and
+// content-transition effects (`.replace`/`.appear`/`.disappear`) are accepted for source-compat but fall through to no
+// animation (see the discriminator below).
+
+public protocol SymbolEffect {}
+public protocol IndefiniteSymbolEffect {}
+public protocol DiscreteSymbolEffect {}
+public protocol TransitionSymbolEffect {}
+public protocol ContentTransitionSymbolEffect {}
+
+/// Options controlling how a symbol effect plays (repeat / speed). Accepted for source compatibility;
+/// the Android bridge currently ignores them (the effect plays at its default cadence).
+public struct SymbolEffectOptions : Sendable {
+    public init() {}
+    public static var `default`: SymbolEffectOptions { SymbolEffectOptions() }
+    public static var repeating: SymbolEffectOptions { SymbolEffectOptions() }
+    public static var nonRepeating: SymbolEffectOptions { SymbolEffectOptions() }
+    public static func `repeat`(_ count: Int) -> SymbolEffectOptions { SymbolEffectOptions() }
+    public static func speed(_ speed: Double) -> SymbolEffectOptions { SymbolEffectOptions() }
+    public func `repeat`(_ count: Int) -> SymbolEffectOptions { self }
+    public func speed(_ speed: Double) -> SymbolEffectOptions { self }
+}
+
+public struct PulseSymbolEffect : SymbolEffect, IndefiniteSymbolEffect, DiscreteSymbolEffect, Sendable {
+    public init() {}
+    public var wholeSymbol: PulseSymbolEffect { self }
+    public var byLayer: PulseSymbolEffect { self }
+}
+
+public struct BounceSymbolEffect : SymbolEffect, DiscreteSymbolEffect, Sendable {
+    let isDown: Bool
+    public init() { self.isDown = false }
+    init(isDown: Bool) { self.isDown = isDown }
+    public var up: BounceSymbolEffect { BounceSymbolEffect(isDown: false) }
+    public var down: BounceSymbolEffect { BounceSymbolEffect(isDown: true) }
+    public var wholeSymbol: BounceSymbolEffect { self }
+    public var byLayer: BounceSymbolEffect { self }
+}
+
+public struct ScaleSymbolEffect : SymbolEffect, IndefiniteSymbolEffect, Sendable {
+    let isDown: Bool
+    public init() { self.isDown = false }
+    init(isDown: Bool) { self.isDown = isDown }
+    public var up: ScaleSymbolEffect { ScaleSymbolEffect(isDown: false) }
+    public var down: ScaleSymbolEffect { ScaleSymbolEffect(isDown: true) }
+    public var wholeSymbol: ScaleSymbolEffect { self }
+    public var byLayer: ScaleSymbolEffect { self }
+}
+
+extension SymbolEffect where Self == PulseSymbolEffect {
+    public static var pulse: PulseSymbolEffect { PulseSymbolEffect() }
+}
+
+extension SymbolEffect where Self == BounceSymbolEffect {
+    public static var bounce: BounceSymbolEffect { BounceSymbolEffect() }
+}
+
+extension SymbolEffect where Self == ScaleSymbolEffect {
+    public static var scale: ScaleSymbolEffect { ScaleSymbolEffect() }
+}
+
+/// Discriminate the opaque effect value into the (effect, direction) integers the skip-ui bridge understands.
+/// effect: 0 = none/unsupported, 1 = pulse, 2 = bounce, 3 = scale. direction: 0 = up/default, 1 = down.
+private func bridgedSymbolEffect(_ effect: Any) -> (effect: Int, direction: Int) {
+    if effect is PulseSymbolEffect { return (1, 0) }
+    if let bounce = effect as? BounceSymbolEffect { return (2, bounce.isDown ? 1 : 0) }
+    if let scale = effect as? ScaleSymbolEffect { return (3, scale.isDown ? 1 : 0) }
+    return (0, 0)
+}
+
 extension View {
-    @available(*, unavailable)
-    nonisolated public func symbolEffect(_ effect: Any, options: Any? = nil /* SymbolEffectOptions = .default */, isActive: Bool = true) -> some View {
-        return stubView()
+    nonisolated public func symbolEffect<T>(_ effect: T, options: SymbolEffectOptions = .default, isActive: Bool = true) -> some View where T : IndefiniteSymbolEffect, T : SymbolEffect {
+        let bridged = bridgedSymbolEffect(effect)
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.symbolEffect(bridgedEffect: bridged.effect, direction: bridged.direction, isActive: isActive, bridgedValue: 0)
+        }
     }
 
-    @available(*, unavailable)
-    nonisolated public func symbolEffect(_ effect: Any, options: Any? = nil /* SymbolEffectOptions = .default */, value: Any) -> some View {
-        return stubView()
+    nonisolated public func symbolEffect<T, U>(_ effect: T, options: SymbolEffectOptions = .default, value: U) -> some View where T : DiscreteSymbolEffect, T : SymbolEffect, U : Equatable {
+        let bridged = bridgedSymbolEffect(effect)
+        // The bridge can't carry an arbitrary Equatable, so we send a stable per-process change token:
+        // any change in `value` changes the token, which re-triggers the discrete animation in skip-ui.
+        let token = String(describing: value).hashValue & 0x7FFFFFFF
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.symbolEffect(bridgedEffect: bridged.effect, direction: bridged.direction, isActive: true, bridgedValue: token)
+        }
     }
 
     @available(*, unavailable)
