@@ -212,6 +212,25 @@ extension ScrollPhase : CustomDebugStringConvertible {
     }
 }
 
+extension ScrollPhase {
+    /// Reconstructs a phase from the raw Int sent across the bridge by SkipUI's `ScrollPhase`.
+    /// The mapping must stay in sync with that type's raw values (idle=0 … animating=4).
+    init(bridgedValue: Int) {
+        switch bridgedValue {
+        case 1:
+            self = .tracking
+        case 2:
+            self = .interacting
+        case 3:
+            self = .decelerating
+        case 4:
+            self = .animating
+        default:
+            self = .idle
+        }
+    }
+}
+
 public struct ScrollPhaseChangeContext {
     @available(*, unavailable)
     public var geometry: ScrollGeometry {
@@ -679,6 +698,26 @@ extension View {
                 return Java_swiftEquatable(for: transform(geometry))
             }) { (oldValue: SwiftEquatable, newValue: SwiftEquatable) in
                 action(oldValue.base as! T, newValue.base as! T)
+            }
+        }
+    }
+
+    nonisolated public func onScrollPhaseChange(_ action: @escaping (_ oldPhase: ScrollPhase, _ newPhase: ScrollPhase) -> Void) -> some View {
+        return ModifierView(target: self) {
+            // The generated bridge takes the phase callback as a trailing closure (raw Ints), mirroring
+            // onScrollGeometryChangeErased; reconstruct ScrollPhase on the Swift side.
+            $0.Java_viewOrEmpty.onScrollPhaseChange { (oldRaw: Int, newRaw: Int) in
+                action(ScrollPhase(bridgedValue: oldRaw), ScrollPhase(bridgedValue: newRaw))
+            }
+        }
+    }
+
+    nonisolated public func onScrollPhaseChange(_ action: @escaping (_ oldPhase: ScrollPhase, _ newPhase: ScrollPhase, _ context: ScrollPhaseChangeContext) -> Void) -> some View {
+        return ModifierView(target: self) {
+            // ScrollPhaseChangeContext carries only iOS-only geometry/velocity (unavailable on Android),
+            // so we pass an empty context; the phase transition itself is faithful.
+            $0.Java_viewOrEmpty.onScrollPhaseChange { (oldRaw: Int, newRaw: Int) in
+                action(ScrollPhase(bridgedValue: oldRaw), ScrollPhase(bridgedValue: newRaw), ScrollPhaseChangeContext())
             }
         }
     }
