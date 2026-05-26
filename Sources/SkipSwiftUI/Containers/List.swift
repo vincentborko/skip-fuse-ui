@@ -377,9 +377,15 @@ extension View {
         }
     }
 
-    @available(*, unavailable)
     /* @inlinable */ nonisolated public func listRowInsets(_ insets: EdgeInsets?) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            // A nil `insets` resets to the list's default row margins, so forward the unmodified view.
+            if let insets {
+                return $0.Java_viewOrEmpty.listRowInsets(bridgedTop: insets.top, bridgedLeading: insets.leading, bridgedBottom: insets.bottom, bridgedTrailing: insets.trailing)
+            } else {
+                return $0.Java_viewOrEmpty
+            }
+        }
     }
 
     @available(*, unavailable)
