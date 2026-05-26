@@ -56,6 +56,8 @@ extension EnvironmentValues {
         case "colorScheme":
             let rawValue = bridgedValue as? Int
             return rawValue == nil ? ColorScheme.light : ColorScheme(rawValue: rawValue!) ?? .light
+        case "defaultMinListRowHeight":
+            return bridgedValue as? CGFloat ?? 32.0
         case "dismiss":
             let action = (bridgedValue as? SkipUI.DismissAction)?.action ?? { }
             let actionBox = UncheckedSendableBox(action)
@@ -128,6 +130,8 @@ extension EnvironmentValues {
             return (value as? any ShapeStyle)?.Java_view
         case "colorScheme":
             return (value as? ColorScheme)?.rawValue
+        case "defaultMinListRowHeight":
+            return value as? CGFloat
         case "dismiss":
             guard let action = (value as? DismissAction)?.action else {
                 return nil
@@ -205,6 +209,7 @@ extension EnvironmentValues {
         keys[\EnvironmentValues.autocorrectionDisabled] = "autocorrectionDisabled"
         keys[\EnvironmentValues.backgroundStyle] = "backgroundStyle"
         keys[\EnvironmentValues.colorScheme] = "colorScheme"
+        keys[\EnvironmentValues.defaultMinListRowHeight] = "defaultMinListRowHeight"
         keys[\EnvironmentValues.dismiss] = "dismiss"
         keys[\EnvironmentValues.font] = "font"
         keys[\EnvironmentValues.horizontalSizeClass] = "horizontalSizeClass"
@@ -392,6 +397,16 @@ extension EnvironmentValues {
     public var lineLimit: Int? {
         get { fatalError("Read via @Environment property wrapper") }
         set { fatalError("Set via dedicated View modifier") }
+    }
+}
+
+extension EnvironmentValues {
+    // SwiftUI has no dedicated `.defaultMinListRowHeight(_:)` modifier — it is set via
+    // `.environment(\.defaultMinListRowHeight, _)`, so this must be a writable builtin (see
+    // the `keys`/`bridgeBuiltin`/`builtin` registrations below) rather than `@available(unavailable)`.
+    public var defaultMinListRowHeight: CGFloat {
+        get { fatalError("Read via @Environment property wrapper") }
+        set { fatalError("Set via .environment(\\.defaultMinListRowHeight, _)") }
     }
 }
 
