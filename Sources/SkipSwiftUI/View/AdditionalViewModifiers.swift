@@ -386,6 +386,14 @@ extension View {
             }
         }
     }
+
+    nonisolated public func onScrollVisibilityChange(threshold: Double = 0.5, _ action: @escaping (Bool) -> Void) -> some View {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.onScrollVisibilityChange(threshold: threshold) { visible in
+                action(visible)
+            }
+        }
+    }
 }
 
 extension View {
