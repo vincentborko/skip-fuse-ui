@@ -601,6 +601,12 @@ extension View {
         }
     }
 
+    nonisolated public func defaultScrollAnchor(_ anchor: UnitPoint?) -> some View {
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.defaultScrollAnchor(bridgedAnchorX: anchor?.x, bridgedAnchorY: anchor?.y)
+        }
+    }
+
     @available(*, unavailable)
     nonisolated public func scrollClipDisabled(_ disabled: Bool = true) -> some View {
         stubView()
