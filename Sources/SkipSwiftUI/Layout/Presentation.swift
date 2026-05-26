@@ -68,6 +68,72 @@ public struct PresentationContentInteraction : Equatable /*, Sendable */ {
     }
 }
 
+/// The sizing of a presentation. On Android a presentation is always a Compose `ModalBottomSheet`,
+/// whose only sizing lever is `sheetMaxWidth`, so `.page` fills the available width, `.form`/`.fitted`
+/// cap to a narrower form-like width, and `.automatic` keeps the Material default. As on a compact-width
+/// iPhone, the difference is only visible when the screen is wider than the cap (landscape / tablet).
+public protocol PresentationSizing {
+}
+
+// The discriminator the bridge sends to skip-ui (`presentationSizing(bridgedSizing:)`). Kept separate
+// from the public `PresentationSizing` surface so conformers don't have to implement bridging.
+extension PresentationSizing {
+    var bridgedSizing: Int {
+        if self is PagePresentationSizing { return 1 }
+        if self is FormPresentationSizing { return 2 }
+        if self is FittedPresentationSizing { return 3 }
+        return 0 // automatic / custom
+    }
+}
+
+public struct AutomaticPresentationSizing : PresentationSizing, Sendable {
+}
+
+public struct PagePresentationSizing : PresentationSizing, Sendable {
+}
+
+public struct FormPresentationSizing : PresentationSizing, Sendable {
+}
+
+public struct FittedPresentationSizing : PresentationSizing, Sendable {
+}
+
+extension PresentationSizing where Self == AutomaticPresentationSizing {
+    public static var automatic: AutomaticPresentationSizing {
+        return AutomaticPresentationSizing()
+    }
+}
+
+extension PresentationSizing where Self == PagePresentationSizing {
+    public static var page: PagePresentationSizing {
+        return PagePresentationSizing()
+    }
+}
+
+extension PresentationSizing where Self == FormPresentationSizing {
+    public static var form: FormPresentationSizing {
+        return FormPresentationSizing()
+    }
+}
+
+extension PresentationSizing where Self == FittedPresentationSizing {
+    public static var fitted: FittedPresentationSizing {
+        return FittedPresentationSizing()
+    }
+}
+
+extension PresentationSizing {
+    @available(*, unavailable)
+    public func fitted(horizontal: Bool, vertical: Bool) -> FittedPresentationSizing {
+        fatalError()
+    }
+
+    @available(*, unavailable)
+    public func sticky(horizontal: Bool = false, vertical: Bool = false) -> Self {
+        fatalError()
+    }
+}
+
 public struct PresentationDetent : Hashable, Sendable {
     let identifier: Int // For bridging
     let value: CGFloat
@@ -435,6 +501,13 @@ extension View {
     nonisolated public func presentationDragIndicator(_ visibility: Visibility) -> some View {
         return ModifierView(target: self) {
             $0.Java_viewOrEmpty.presentationDragIndicator(bridgedVisibility: visibility.rawValue)
+        }
+    }
+
+    nonisolated public func presentationSizing(_ sizing: some PresentationSizing) -> some View {
+        let bridgedSizing = sizing.bridgedSizing
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.presentationSizing(bridgedSizing: bridgedSizing)
         }
     }
 }
