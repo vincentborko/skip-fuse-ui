@@ -286,18 +286,28 @@ extension CombinedTransition : Transition {
 }
 
 public struct ContentTransition : Equatable, Sendable {
-    public static let identity = ContentTransition()
+    // Discriminator bridged to skip-ui (matches `SkipUI.ContentTransition.rawValue`):
+    // 0 = identity, 1 = opacity, 2 = interpolate, 3 = numericText.
+    let bridgedValue: Int
 
-    public static let opacity = ContentTransition()
+    private init(bridgedValue: Int) {
+        self.bridgedValue = bridgedValue
+    }
 
-    public static let interpolate = ContentTransition()
+    public static let identity = ContentTransition(bridgedValue: 0)
 
+    public static let opacity = ContentTransition(bridgedValue: 1)
+
+    public static let interpolate = ContentTransition(bridgedValue: 2)
+
+    // `countsDown` is not carried across the bridge: skip-ui's `ContentTransition` collapses both
+    // numericText overloads to a single raw value, so the Android roll direction is always upward.
     public static func numericText(countsDown: Bool = false) -> ContentTransition {
-        return ContentTransition()
+        return ContentTransition(bridgedValue: 3)
     }
 
     public static func numericText(value: Double) -> ContentTransition {
-        return ContentTransition()
+        return ContentTransition(bridgedValue: 3)
     }
 }
 
@@ -411,9 +421,10 @@ public struct SlideTransition : Transition {
 }
 
 extension View {
-    @available(*, unavailable)
     nonisolated public func contentTransition(_ transition: ContentTransition) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.contentTransition(bridgedTransition: transition.bridgedValue)
+        }
     }
 }
 
