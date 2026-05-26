@@ -464,14 +464,21 @@ extension View {
         stubView()
     }
 
-    @available(*, unavailable)
     nonisolated public func dynamicTypeSize(_ size: DynamicTypeSize) -> some View {
-        stubView()
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.dynamicTypeSize(bridgedSize: size.bridgedValue)
+        }
     }
 
-    @available(*, unavailable)
-    nonisolated public func dynamicTypeSize(_ range: Range<DynamicTypeSize>) -> some View {
-        stubView()
+    nonisolated public func dynamicTypeSize<T>(_ range: T) -> some View where T : RangeExpression, T.Bound == DynamicTypeSize {
+        // Resolve the (possibly partial) range to inclusive ordinal bounds over the full set of
+        // categories; SkipUI clamps the device's live size into [lower, upper] on the Compose side.
+        let included = DynamicTypeSize.allCases.filter { range.contains($0) }
+        let lower = included.first ?? .xSmall
+        let upper = included.last ?? .accessibility5
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.dynamicTypeSize(bridgedLowerBound: lower.bridgedValue, bridgedUpperBound: upper.bridgedValue)
+        }
     }
 
     @available(*, unavailable)

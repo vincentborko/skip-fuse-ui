@@ -23,4 +23,10 @@ public enum DynamicTypeSize : Hashable, Comparable, CaseIterable, Sendable {
             return false
         }
     }
+
+    /// Ordinal index used to bridge this category to SkipUI's `Int`-backed `DynamicTypeSize`.
+    /// The case order here matches SkipUI's enum, so the index equals SkipUI's `rawValue`.
+    var bridgedValue: Int {
+        return DynamicTypeSize.allCases.firstIndex(of: self) ?? 3 // .large
+    }
 }
