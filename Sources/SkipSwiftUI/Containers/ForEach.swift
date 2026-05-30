@@ -15,14 +15,21 @@ public struct ForEach<Data, ID, Content> : ForEachProtocol where Data : RandomAc
 
 extension ForEach : SkipUIBridging {
     public var Java_view: any SkipUI.View {
+        // SkipUI.ForEach drives content by integer offsets in 0..<count, so map each
+        // offset to its element via index(_:offsetBy:) rather than force-casting the
+        // collection's index to Int. Not every RandomAccessCollection has Int indices —
+        // e.g. ClosedRange<Int>.Index is not Int, which made `ForEach(1...n, ...)` abort.
+        func element(atOffset offset: Int) -> Data.Element {
+            return data[data.index(data.startIndex, offsetBy: offset)]
+        }
         let indexedIdentifier: ((Int) -> SwiftHashable)?
         if let id {
-            indexedIdentifier = { Java_swiftHashable(for: id(data[$0 as! Data.Index])) }
+            indexedIdentifier = { Java_swiftHashable(for: id(element(atOffset: $0))) }
         } else {
             indexedIdentifier = nil
         }
-        var forEach = SkipUI.ForEach(startIndex: { data.startIndex as! Int }, endIndex: { data.endIndex as! Int }, identifier: indexedIdentifier, bridgedContent: {
-            let view = content(data[$0 as! Data.Index])
+        var forEach = SkipUI.ForEach(startIndex: { 0 }, endIndex: { data.count }, identifier: indexedIdentifier, bridgedContent: {
+            let view = content(element(atOffset: $0))
             return (view as? SkipUIBridging)?.Java_view ?? SkipUI.EmptyView()
         })
         if let onDelete {
