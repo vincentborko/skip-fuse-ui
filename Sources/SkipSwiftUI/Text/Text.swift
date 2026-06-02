@@ -699,9 +699,11 @@ extension View {
         stubView()
     }
 
-    @available(*, unavailable)
     nonisolated public func textSelection(_ selectability: TextSelectability) -> some View {
-        stubView()
+        let enabled = selectability is EnabledTextSelectability
+        return ModifierView(target: self) {
+            $0.Java_viewOrEmpty.textSelection(bridgedEnabled: enabled)
+        }
     }
 
     @available(*, unavailable)
