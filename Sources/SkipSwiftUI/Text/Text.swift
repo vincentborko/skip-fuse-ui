@@ -37,10 +37,13 @@ import SkipUI
         self.init(spec: TextSpec(verbatim: content))
     }
 
-    // SwiftUI documents this overload as displaying a stored string without localization,
-    // so the content must not be looked up in the string catalog again (#135).
+    // BS_Skip fork only: skiptools/skip-fuse-ui#136 (verbatim) is reverted here on purpose.
+    // The BesserSprechen app still passes unresolved German catalog keys as String at
+    // ~550 call sites and relies on this lookup; verbatim would draw German in en.
+    // Drop this revert once the app hands those texts over as LocalizedStringKey
+    // (speakzmedia/BS_Skip#329, section 4; iOS side speakzmedia/BesserSprechen#1756).
     @_disfavoredOverload public init<S>(_ content: S) where S : StringProtocol {
-        self.init(spec: TextSpec(verbatim: String(content)))
+        self.init(spec: TextSpec(key: LocalizedStringKey(String(content))))
     }
 
     public static func == (lhs: Text, rhs: Text) -> Bool {
